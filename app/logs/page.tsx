@@ -10,6 +10,7 @@ import {
   PageHeader,
   StatusBadge,
 } from "@/components/fabric"
+import { LogDetailDialog } from "@/components/log-detail-dialog"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -32,12 +33,13 @@ export default function LogsPage() {
   const [limit, setLimit] = React.useState(100)
   const logs = usePoll(() => api.inferenceLogs(limit), 5000, [limit])
   const list = logs.data ?? []
+  const [selected, setSelected] = React.useState<string | null>(null)
 
   return (
     <>
       <PageHeader
         title="Inference logs"
-        description="Every request the router handled: which device ran it, how long it took and how many tokens it used."
+        description="Every request the router handled: which device ran it, how long it took and how many tokens it used. Click a row to see the messages and the reply."
         actions={
           <NativeSelect
             value={limit}
@@ -67,6 +69,7 @@ export default function LogsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Device</TableHead>
+                <TableHead>Key</TableHead>
                 <TableHead className="text-right">Latency</TableHead>
                 <TableHead className="text-right">Tokens in / out</TableHead>
                 <TableHead className="pr-5 text-right">Speed</TableHead>
@@ -74,7 +77,11 @@ export default function LogsPage() {
             </TableHeader>
             <TableBody>
               {list.map((log, index) => (
-                <TableRow key={`${log.requestId}-${index}`}>
+                <TableRow
+                  key={`${log.requestId}-${index}`}
+                  className="cursor-pointer"
+                  onClick={() => setSelected(log.requestId)}
+                >
                   <TableCell className="pl-5 whitespace-nowrap text-muted-foreground">
                     {formatDateTime(log.createdAt)}
                   </TableCell>
@@ -100,12 +107,16 @@ export default function LogsPage() {
                       <Link
                         href={`/devices/${log.deviceId}`}
                         className="hover:underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {log.deviceId}
                       </Link>
                     ) : (
                       <span className="text-muted-foreground">–</span>
                     )}
+                  </TableCell>
+                  <TableCell className="max-w-36 truncate text-muted-foreground">
+                    {log.apiKeyName ?? "console"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatMs(log.latencyMs)}
@@ -124,6 +135,8 @@ export default function LogsPage() {
           </Table>
         </Card>
       )}
+
+      <LogDetailDialog requestId={selected} onClose={() => setSelected(null)} />
     </>
   )
 }

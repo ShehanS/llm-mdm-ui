@@ -68,6 +68,8 @@ export interface DeviceStatus {
   // Set while the device uploads a model to mdm ("Copy to PC").
   uploadModelId?: string | null
   uploadPercent?: number | null
+  // True while the device runs a benchmark.
+  benchmarking?: boolean | null
 }
 
 export interface Benchmark {
@@ -134,7 +136,30 @@ export interface InferenceLog {
   completionTokens?: number
   tokensPerSecond?: number
   error?: string
+  // API key that made the request; empty for console requests.
+  apiKeyName?: string | null
   createdAt: string
+  // Recorded conversation; only in the detail (api.inferenceLog), not in the list.
+  messagesRecorded?: boolean
+  requestMessages?: { role: string; content: string }[] | null
+  requestOptions?: Record<string, string | number | boolean | null> | null
+  responseContent?: string | null
+  finishReason?: string | null
+  truncated?: boolean
+}
+
+// Client API key for the inference API. key (the secret) is only present right after creation.
+export interface ApiKey {
+  keyId: string
+  name: string
+  keyPrefix: string
+  deviceIds: string[]
+  models: string[]
+  enabled: boolean
+  createdTime?: string
+  lastUsedTime?: string | null
+  requestCount: number
+  key?: string | null
 }
 
 export interface OpenAiModelList {

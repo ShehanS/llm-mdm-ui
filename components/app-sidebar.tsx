@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import {
   BoxesIcon,
+  KeyRoundIcon,
   LayoutGridIcon,
   MessageSquareTextIcon,
   MoonIcon,
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/models", label: "Model catalog", icon: BoxesIcon },
   { href: "/playground", label: "Playground", icon: MessageSquareTextIcon },
   { href: "/logs", label: "Inference logs", icon: ScrollTextIcon },
+  { href: "/keys", label: "API keys", icon: KeyRoundIcon },
 ]
 
 // The server can't know the theme, so both icons are rendered and the .dark class picks one

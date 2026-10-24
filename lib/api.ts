@@ -1,4 +1,5 @@
 import type {
+  ApiKey,
   CatalogModel,
   ChatCompletion,
   ChatMessage,
@@ -123,10 +124,56 @@ export const api = {
     return body.data ?? body.message
   },
 
-  loadedModels: () => request<OpenAiModelList>("/v1/models"),
+  // Console (admin) routes: no API key needed. Public clients use /v1 with a key.
+  // Starts the benchmark on a device; the result shows up later in device.aiCapability.benchmark.
+  runBenchmark: async (deviceId: string) => {
+    const body = await request<ResponseMessage<string>>(
+      `/api/devices/${encodeURIComponent(deviceId)}/benchmark`,
+      { method: "POST" }
+    )
+    if (body.code !== "CODE-021") {
+      throw new ApiError(
+        typeof body.error === "string" ? body.error : body.message,
+        400
+      )
+    }
+    return body.data ?? body.message
+  },
+
+  loadedModels: () => request<OpenAiModelList>("/api/inference/models"),
+
+  keys: () => unwrap<ApiKey[]>("/api/keys"),
+
+  createKey: (key: { name: string; deviceIds: string[]; models: string[] }) =>
+    unwrap<ApiKey>("/api/keys", { method: "POST", body: JSON.stringify(key) }),
+
+  updateKey: (
+    keyId: string,
+    changes: {
+      name?: string
+      deviceIds?: string[]
+      models?: string[]
+      enabled?: boolean
+    }
+  ) =>
+    unwrap<ApiKey>(`/api/keys/${encodeURIComponent(keyId)}`, {
+      method: "PUT",
+      body: JSON.stringify(changes),
+    }),
+
+  deleteKey: (keyId: string) =>
+    request<ResponseMessage<null>>(`/api/keys/${encodeURIComponent(keyId)}`, {
+      method: "DELETE",
+    }),
 
   inferenceLogs: (limit = 50) =>
     request<InferenceLog[]>(`/api/inference/logs?limit=${limit}`),
+
+  // Every attempt of one request (a failed device, then the one that answered), with messages and reply.
+  inferenceLog: (requestId: string) =>
+    request<InferenceLog[]>(
+      `/api/inference/logs/${encodeURIComponent(requestId)}`
+    ),
 
   chat: (
     body: {
@@ -137,9 +184,18 @@ export const api = {
     },
     deviceId?: string
   ) =>
-    request<ChatCompletion>("/v1/chat/completions", {
+    request<ChatCompletion>("/api/inference/chat", {
       method: "POST",
       body: JSON.stringify(body),
       headers: deviceId ? { "X-Fabric-Device": deviceId } : undefined,
     }),
+}
+
+// Address public clients use for the inference API (mdm itself, not this console).
+// Set NEXT_PUBLIC_MDM_PUBLIC_URL once mdm has a public address; otherwise mdm's port on this host.
+export function publicApiBase(): string {
+  const configured = process.env.NEXT_PUBLIC_MDM_PUBLIC_URL
+  if (configured) return configured.replace(/\/$/, "")
+  if (typeof window === "undefined") return "http://localhost:8095"
+  return `${window.location.protocol}//${window.location.hostname}:8095`
 }

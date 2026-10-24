@@ -4,6 +4,8 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { ArrowLeftIcon, MessageSquareTextIcon } from "lucide-react"
 
+import { BenchmarkButton } from "@/components/benchmark-button"
+import { DeviceApiCard } from "@/components/device-api-card"
 import { DeviceModelCard } from "@/components/device-model-card"
 import { ErrorNote, Meter, PageHeader, StatusBadge } from "@/components/fabric"
 import { Button } from "@/components/ui/button"
@@ -144,6 +146,14 @@ export default function DeviceDetailPage() {
             <Row label="Benchmark model">{benchmark?.modelId}</Row>
             <Row label="Tested">{formatDateTime(benchmark?.testedAt)}</Row>
             <Row label="Backends">{d?.aiCapability?.backends?.join(", ")}</Row>
+            <div className="pt-3">
+              <BenchmarkButton
+                deviceId={deviceId}
+                benchmark={benchmark}
+                benchmarking={s?.benchmarking}
+                online={Boolean(d?.active) && s?.status !== "OFFLINE"}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -170,6 +180,8 @@ export default function DeviceDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeviceApiCard deviceId={deviceId} />
     </>
   )
 }
