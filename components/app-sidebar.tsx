@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -55,9 +56,14 @@ export function AppSidebar() {
     <aside className="flex shrink-0 flex-col border-b border-sidebar-border bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:h-svh md:w-64 md:border-r md:border-b-0">
       <div className="flex items-center justify-between px-5 py-5 md:px-6 md:py-8">
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">
-            N
-          </span>
+          <Image
+            src="/ncinga-logo.png"
+            alt="NCINGA Fabric"
+            width={40}
+            height={40}
+            priority
+            className="size-10"
+          />
           <span className="leading-tight">
             <span className="block text-sm font-semibold tracking-tight">
               NCINGA Fabric
