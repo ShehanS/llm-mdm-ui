@@ -1,7 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { DownloadIcon, PlayIcon, UploadIcon } from "lucide-react"
+import {
+  DownloadIcon,
+  PlayIcon,
+  Trash2Icon,
+  UploadIcon,
+  XIcon,
+} from "lucide-react"
 
 import { NativeSelect } from "@/components/fabric"
 import { Button } from "@/components/ui/button"
@@ -52,6 +58,29 @@ export function DeviceModelCard({
     } finally {
       setPushing(false)
     }
+  }
+
+  // Runs one device command and shows its answer below the card.
+  async function command(action: () => Promise<string>) {
+    setPushing(true)
+    setResult(undefined)
+    try {
+      setResult({ ok: true, text: await action() })
+    } catch (e) {
+      setResult({ ok: false, text: e instanceof Error ? e.message : String(e) })
+    } finally {
+      setPushing(false)
+    }
+  }
+
+  function deleteModel(modelId: string) {
+    if (
+      !window.confirm(
+        `Delete ${modelId} from this phone? It can be pushed to it again later.`
+      )
+    )
+      return
+    void command(() => api.deleteDeviceModel(deviceId, modelId))
   }
 
   async function copyToPc(modelId: string) {
@@ -147,6 +176,27 @@ export function DeviceModelCard({
                           </>
                         )}
                       </Button>
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        aria-label={`Delete ${name}`}
+                        title={
+                          serving
+                            ? "Load another model before deleting this one"
+                            : "Delete this model from the phone"
+                        }
+                        onClick={() => deleteModel(name)}
+                        disabled={
+                          serving ||
+                          !online ||
+                          pushing ||
+                          downloading === name ||
+                          uploading === name
+                        }
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2Icon />
+                      </Button>
                     </span>
                   </li>
                 )
@@ -167,6 +217,19 @@ export function DeviceModelCard({
             label="Copying to PC"
             modelId={uploading}
             percent={status?.uploadPercent ?? 0}
+            action={
+              <Button
+                size="xs"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={() =>
+                  command(() => api.cancelCopyToPlatform(deviceId, uploading))
+                }
+                disabled={pushing}
+              >
+                <XIcon /> Cancel
+              </Button>
+            }
           />
         )}
 
@@ -231,10 +294,12 @@ function Progress({
   label,
   modelId,
   percent,
+  action,
 }: {
   label: string
   modelId: string
   percent: number
+  action?: React.ReactNode
 }) {
   return (
     <div className="space-y-2">
@@ -242,7 +307,10 @@ function Progress({
         <span className="text-muted-foreground">
           {label} <span className="font-mono">{modelId}</span>
         </span>
-        <span className="font-medium tabular-nums">{percent}%</span>
+        <span className="flex items-center gap-2">
+          <span className="font-medium tabular-nums">{percent}%</span>
+          {action}
+        </span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div

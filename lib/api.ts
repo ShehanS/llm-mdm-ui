@@ -54,6 +54,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T
 }
 
+// Device commands answer CODE-023 with the device's message, or CODE-024 with the reason it refused.
+async function deviceCommand(path: string, method: string): Promise<string> {
+  const body = await request<ResponseMessage<string>>(path, { method })
+  if (body.code !== "CODE-023") {
+    throw new ApiError(
+      typeof body.error === "string" ? body.error : body.message,
+      400
+    )
+  }
+  return body.data ?? body.message
+}
+
 // mdm wraps most responses in ResponseMessage { code, message, data, error }.
 async function unwrap<T>(path: string, init?: RequestInit): Promise<T> {
   const body = await request<ResponseMessage<T>>(path, init)
@@ -139,6 +151,20 @@ export const api = {
     }
     return body.data ?? body.message
   },
+
+  // Deletes a model file from a device. Resolves with the device's message (e.g. "Deleted … (505 MB freed)").
+  deleteDeviceModel: (deviceId: string, modelId: string) =>
+    deviceCommand(
+      `/api/devices/${encodeURIComponent(deviceId)}/models/${encodeURIComponent(modelId)}`,
+      "DELETE"
+    ),
+
+  // Stops a running "Copy to PC"; mdm discards the partial file.
+  cancelCopyToPlatform: (deviceId: string, modelId: string) =>
+    deviceCommand(
+      `/api/devices/${encodeURIComponent(deviceId)}/models/${encodeURIComponent(modelId)}/copy-to-platform/cancel`,
+      "POST"
+    ),
 
   loadedModels: () => request<OpenAiModelList>("/api/inference/models"),
 
